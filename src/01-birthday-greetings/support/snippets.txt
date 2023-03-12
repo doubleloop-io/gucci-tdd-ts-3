@@ -1,0 +1,119 @@
+-------------- send mail
+const smtpClient = nodemailer.createTransport({
+        host: "0.0.0.0",
+        port: 1025,
+        secure: false,
+    })
+
+await smtpClient.sendMail({
+    from: "greetings@acme.com",
+    to: "joe@acme.com",
+    subject: "WAT",
+    text: "Is this real?",
+})
+
+--------------- start mailhog
+const file = path.join(__dirname, "support/MailHog_darwin_amd64")
+const proc = spawn(file).on("error", (...args) => {
+    console.error("cannot execute mailhog", args)
+})
+
+-------------- proc env
+env: {
+    MH_SMTP_BIND_ADDR: `0.0.0.0:1025`,
+    MH_UI_BIND_ADDR: `0.0.0.0:8025`,
+    MH_API_BIND_ADDR: `0.0.0.0:8025`,
+},
+
+-------------- delivered messages
+const api = mailhog({ host: "0.0.0.0", port: 8025 })
+const messages = await api.messages()
+
+--------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+async sendMail(config: ClientSmtpConfig, message: MailMessage) {
+    const smtpClient = nodemailer.createTransport({
+        host: config.hostname,
+        port: config.smtpPort,
+        secure: false,
+    })
+
+    await smtpClient.sendMail(toMailHogMessage(message))
+}
+
+export class LocalSmtpServer {
+    private config: ServerSmtpConfig
+    private proc: ChildProcess | undefined
+
+    constructor(config: ServerSmtpConfig) {
+        this.config = config
+    }
+
+    async start() {
+        const config = this.config
+
+        const file = path.join(__dirname, "support/MailHog_darwin_amd64")
+        this.proc = spawn(file, [], {
+            env: {
+                MH_SMTP_BIND_ADDR: `${config.hostname}:${config.smtpPort}`,
+                MH_UI_BIND_ADDR: `${config.hostname}:${config.httpPort}`,
+                MH_API_BIND_ADDR: `${config.hostname}:${config.httpPort}`,
+            },
+        }).on("error", (...args) => {
+            console.error("cannot execute mailhog", args)
+        })
+
+        await isServerReachable(config.smtpPort)
+    }
+
+    stop() {
+        if (!this.proc) return
+
+        const isKilled = this.proc.kill()
+        !isKilled && console.error("MailHog not properly shutdown")
+    }
+
+    deliveredMessages() {
+        const { hostname, httpPort } = this.config
+        const api = mailhog({ host: hostname, port: httpPort })
+        return api.messages()
+    }
+}
+
+async function isServerReachable(port: number) {
+    await isPortReachable(port, { host: "0.0.0.0" })
+    await delay(100)
+}
+
+function prepareEmployeesCsvFile(data: string[]) {
+    const header = "last_name, first_name, date_of_birth, email"
+    const completeData = [header].concat(data)
+    writeFileSync(employeesFileName, completeData.join(EOL))
+}
