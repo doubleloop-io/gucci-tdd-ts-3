@@ -1,5 +1,5 @@
-import { expect } from "@jest/globals"
+import { expect } from "vitest"
 
 export function arrayContains(obj: unknown) {
-    return expect.arrayContaining([expect.objectContaining(obj as any)])
+    return expect.arrayContaining([expect.objectContaining(obj)])
 }
